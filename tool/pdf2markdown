@@ -1,0 +1,91 @@
+#!/bin/sh
+#
+##########################################################
+#  Toy script for converting from pdf to markdown
+#
+#  pdf2markdown  -f <pdf file>
+#
+#  Copyright (C) 2006 Elia Pinto
+#	
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  The Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+##########################################################
+##############################
+# Useful (?) function
+##############################
+Die() {
+ echo "$_PROGNAME: ERROR: $@" >&2
+ exit 1
+}
+Info() {
+ echo "$_PROGNAME: INFO: $@" >&2
+}
+Warn() {
+ echo "$_PROGNAME: WARNING: $@" >&2
+}
+Usage() {
+ cat <<EOF >&2
+Usage: $_PROGNAME -f fileconf
+EOF
+ exit 2
+}
+#################################
+# Argument Check
+#################################
+readonly _PROGNAME=${0##*/}
+#OPTERR=0
+case "$1" in
+    '--help' | '-h')
+ 	cat <<EOF >&2
+Usage: $_PROGNAME -f <pdf file>
+EOF
+    exit 0
+    ;;
+    '--version')
+        cat <<EOF >&2
+$_PROGNAME version 1.0
+
+License GPLv2+: GNU GPL version 2 or later <http://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+EOF
+        exit 0
+    ;;
+esac
+
+while getopts "f:" opt; do
+	case "$opt" in
+	f)	if [ -z "${_PDF_FILE}" ]; then  _PDF_FILE=$OPTARG
+                else
+                     Usage
+                fi;;
+	*)      cat <<EOF >&2 
+$_PROGNAME: unrecognized option \'$opt\'
+
+EOF
+                Usage;;
+	\?)     cat <<EOF >&2 
+$_PROGNAME: unrecognized option \'$opt\'
+
+EOF
+                Usage;;
+	esac
+done
+[ -z "${_PDF_FILE}" ] && Usage 
+
+shift $(($OPTIND - 1))
+[ $# -ne 0 ] && Usage
+[ ! -r "$_PDF_FILE" ] && Die "error file $_PDF_FILE not found"
+
+_MARKDOWN_FILE="$(basename ${_PDF_FILE} .pdf)".txt
+pdftohtml "${_PDF_FILE}" -stdout -enc UTF-8 -nodrm -noframes | pandoc --no-wrap -f html -t markdown  > "${_MARKDOWN_FILE}"
+exit "$?"
